@@ -6,7 +6,7 @@ a portal for myself, like note, reading, etc.
 
 use [Editormd](https://pandao.github.io/editor.md/) write new page
 
-# TOC
+# source
 
 ```
 
@@ -34,6 +34,24 @@ use [Editormd](https://pandao.github.io/editor.md/) write new page
 
 ```
 
+# runtime
+
+```
+.
+├── bin
+│   ├── portal
+│   ├── start.sh
+│   └── stop.sh
+├── config
+│   ├── cert.pem
+│   ├── config.json
+│   └── key.pem
+└── static
+    ├── editormd
+    ├── index.html
+    └── newPage.html
+```
+
 # classify
 
 edit `static/index.html` and add
@@ -43,3 +61,4 @@ edit `static/index.html` and add
             <a href="/alias" target="_blank">classify name</a>
   </div>
 ```
+
