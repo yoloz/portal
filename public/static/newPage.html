@@ -7,7 +7,7 @@
     <!-- <meta name="description" content="Description"> -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
     <title>New Page</title>
-    <link rel="stylesheet" href="docs/editormd/css/editormd.min.css" />
+    <link rel="stylesheet" href="editormd/css/editormd.min.css" />
     <style>
         .inputtxt {
             border: 1px solid #ddd;
@@ -48,13 +48,13 @@
         <input id="oldpath" class="inputtxt" placeholder="/src/path" name="oldpath"></input>
         &nbsp;&nbsp;
         目地址:
-        <input id="newpath" class="inputtxt" placeholder="/target/path" name="newpath"></input>
-        <button id="movefile" class="button">移动</button>
+        <input id="newpath" class="inputtxt" placeholder="absolute or relative path" name="newpath"></input>
+        <button id="moveimage" class="button">上传图片移动</button>
     </div>
     <div id="editor">
     </div>
     <script src="https://cdn.bootcss.com/jquery/1.11.3/jquery.min.js"></script>
-    <script src="docs/editormd/editormd.min.js"></script>
+    <script src="editormd/editormd.min.js"></script>
     <script type="text/javascript">
         var editor;
         $(function () {
@@ -64,8 +64,8 @@
 
                 imageUpload: true,
                 imageFormats: ["jpg", "jpeg", "gif", "png", "bmp", "webp"],
-                imageUploadURL: "docs/upload",
-                path: "docs/editormd/lib/"
+                imageUploadURL: "/upload",
+                path: "editormd/lib/"
             });
         });
 
@@ -77,7 +77,7 @@
             }
             $.ajax({
                 method: "POST",
-                url: "docs/savepage",
+                url: "/savepage",
                 data: { pagepath: pagepath, mdtext: editor.getMarkdown() },
                 success: function (data) {
                     if (data == "ok") {
@@ -88,7 +88,7 @@
                 }
             });
         });
-        $("#movefile").bind('click', function () {
+        $("#moveimage").bind('click', function () {
             var oldpath = $("#oldpath").val();
             var newpath = $("#newpath").val();
             if (oldpath == "" || newpath == "") {
@@ -97,11 +97,10 @@
             }
             $.ajax({
                 method: "POST",
-                url: "docs/movefile",
+                url: "/moveimage",
                 data: { oldpath: oldpath, newpath: newpath },
                 success: function (data) {
                     var cursour = editor.getCursor();
-                    console.log(cursour)
                     editor.setSelection(cursour)
                     editor.insertValue(data);
                 }

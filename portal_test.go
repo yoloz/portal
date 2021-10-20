@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"log"
@@ -9,7 +10,11 @@ import (
 )
 
 func TestStripPrefix(t *testing.T) {
-	res, err := http.Get("http://localhost:10010/note/README.md")
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	res, err := client.Get("https://localhost:20001")
 	if err != nil {
 		log.Fatal(err)
 	}

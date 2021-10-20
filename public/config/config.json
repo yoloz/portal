@@ -1,0 +1,6 @@
+{
+    "host": "0.0.0.0",
+    "port": "20001",
+    "/note": "/home/yoloz/projects/yoloz/docs",
+    "/test": "/home/yoloz/notetest"
+}

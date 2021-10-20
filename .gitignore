@@ -1,0 +1,5 @@
+*.pem
+
+./static/
+
+config_test.json
