@@ -41,6 +41,7 @@
 <body>
     <div style="text-align: center;display: block;">
         <input id="pagepath" class="inputtxt" placeholder="文章地址" name="pagepath"></input>
+        <button id="editpage" class="button">加载编辑</button>
         <button id="savepage" class="button">保存</button>
     </div>
     <div style="text-align: center;display: block;">
@@ -85,6 +86,21 @@
                     } else {
                         alert(data);
                     }
+                }
+            });
+        });
+        $("#editpage").bind('click', function () {
+            var pagepath = $("#pagepath").val();
+            if (pagepath == "") {
+                alert("path is empty");
+                return
+            }
+            $.ajax({
+                method: "POST",
+                url: "/editpage",
+                data: { pagepath: pagepath },
+                success: function (data) {
+                    editor.setMarkdown(data);
                 }
             });
         });

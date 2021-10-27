@@ -18,20 +18,22 @@ func GenerateDocsifyIndex(path string) error {
 
 	var str strings.Builder
 	flist := list.New()
-
+	flist.PushBack("- 目录\n")
 	for _, f := range fs {
-		if f.IsDir() || strings.HasPrefix(f.Name(), "_") || strings.HasPrefix(f.Name(), ".") {
+		if f.IsDir() ||
+			strings.HasPrefix(f.Name(), "_") ||
+			strings.HasPrefix(f.Name(), ".") ||
+			strings.Compare(f.Name(), "index.html") == 0 ||
+			strings.Compare(f.Name(), "README.md") == 0 {
 			continue
 		}
 		str.Reset()
-		if strings.Compare(f.Name(), "README.md") != 0 {
-			str.WriteString("- [")
-			str.WriteString(strings.TrimSuffix(f.Name(), ".md"))
-			str.WriteString("](/")
-			str.WriteString(f.Name())
-			str.WriteString(")\n")
-			flist.PushBack(str.String())
-		}
+		str.WriteString("  - [")
+		str.WriteString(strings.TrimSuffix(f.Name(), ".md"))
+		str.WriteString("](/")
+		str.WriteString(f.Name())
+		str.WriteString(")\n")
+		flist.PushBack(str.String())
 	}
 	//生成文件
 	siderbar, err := os.Create(filepath.Join(path, "_sidebar.md"))
@@ -46,10 +48,11 @@ func GenerateDocsifyIndex(path string) error {
 	}
 	defer readme.Close()
 
+	readme.WriteString("## 首页\n")
 	for e := flist.Front(); e != nil; e = e.Next() {
 		line := e.Value.(string)
 		siderbar.WriteString(line)
-		readme.WriteString(line)
+		// readme.WriteString(line)
 	}
 	return nil
 }

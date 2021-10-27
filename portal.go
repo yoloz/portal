@@ -79,6 +79,22 @@ func main() {
 	<-idleConnsClosed
 }
 
+// absPath 返回绝对路径地址
+func absPath(inpath string) (string, string, error) {
+	dir, fname := path.Split(inpath)
+	if !strings.HasPrefix(inpath, "/") {
+		if strings.HasSuffix(dir, "/") {
+			dir = dir[:len(dir)-1]
+		}
+		absp, exist := cfg_map["/"+dir]
+		if !exist {
+			return "", "", fmt.Errorf("relative name[%s] can not find in configuration", dir)
+		}
+		return absp, absp + "/" + fname, nil
+	}
+	return dir, inpath, nil
+}
+
 func handleRoute() {
 	router.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
 		http.ServeFile(rw, r, cfg_path+"../static/index.html")
@@ -100,34 +116,35 @@ func handleRoute() {
 	router.HandleFunc("/moveimage", func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Add("Content-Type", "text/plain; charset=utf-8")
 		var emsg string
-		var err error
-		if err = r.ParseForm(); err != nil {
+		if err := r.ParseForm(); err != nil {
 			emsg = fmt.Sprintf("%v", err)
 			rw.Write([]byte(emsg))
 			return
 		}
 		oldpath := r.FormValue("oldpath")
 		newpath := r.FormValue("newpath")
-		var relpath string
+		var newrelativepath string
+
 		dir, fname := path.Split(newpath)
 		if !strings.HasPrefix(newpath, "/") {
 			if strings.HasSuffix(dir, "/") {
 				dir = dir[:len(dir)-1]
 			}
-			relpath += dir
+			newrelativepath += dir
+			newrelativepath += "/_images/" + fname
 			absp, exist := cfg_map["/"+dir]
 			if !exist {
-				rw.Write([]byte("relative name[" + dir + "] can not find in configuration"))
+				emsg = fmt.Sprintf("relative name[%s] can not find in configuration", dir)
+				rw.Write([]byte(emsg))
 				return
 			}
-			dir = absp + "/_images"
-			newpath = dir + "/" + fname
-			relpath += "/_images/" + fname
+			dir = absp
+			newpath = absp + "/_images/" + fname
 		} else {
-			relpath = newpath
+			newrelativepath = newpath
 		}
 
-		if _, err = os.Stat(dir); err != nil {
+		if _, err := os.Stat(dir); err != nil {
 			if os.IsNotExist(err) {
 				if err := os.MkdirAll(dir, 0744); err != nil {
 					emsg = fmt.Sprintf("%v", err)
@@ -139,38 +156,30 @@ func handleRoute() {
 			}
 			return
 		}
-		if err = os.Rename(oldpath, newpath); err != nil {
+		if err := os.Rename(oldpath, newpath); err != nil {
 			emsg = fmt.Sprintf("%v", err)
 			rw.Write([]byte(emsg))
 			return
 		}
 
-		rw.Write([]byte(relpath))
+		rw.Write([]byte(newrelativepath))
 	})
 
 	router.HandleFunc("/savepage", func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Add("Content-Type", "text/plain; charset=utf-8")
 		var emsg string
-		var err error
-		if err = r.ParseForm(); err != nil {
+		if err := r.ParseForm(); err != nil {
 			emsg = fmt.Sprintf("%v", err)
 			rw.Write([]byte(emsg))
 			return
 		}
 		pagePath := r.FormValue("pagepath")
 		md_text := r.FormValue("mdtext")
-		dir, fname := path.Split(pagePath)
-		if !strings.HasPrefix(pagePath, "/") {
-			if strings.HasSuffix(dir, "/") {
-				dir = dir[:len(dir)-1]
-			}
-			absp, exist := cfg_map["/"+dir]
-			if !exist {
-				rw.Write([]byte("relative name[" + dir + "] can not find in configuration"))
-				return
-			}
-			dir = absp
-			pagePath = dir + "/" + fname
+		dir, abspath, err := absPath(pagePath)
+		if err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
 		}
 
 		if _, err = os.Stat(dir); err != nil {
@@ -185,7 +194,7 @@ func handleRoute() {
 			}
 			return
 		}
-		if err = os.WriteFile(pagePath, []byte(md_text), 0744); err != nil {
+		if err = os.WriteFile(abspath, []byte(md_text), 0744); err != nil {
 			emsg = fmt.Sprintf("%v", err)
 			rw.Write([]byte(emsg))
 			return
@@ -197,5 +206,46 @@ func handleRoute() {
 			return
 		}
 		rw.Write([]byte("ok"))
+	})
+
+	router.HandleFunc("/editpage", func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Add("Content-Type", "text/plain; charset=utf-8")
+		var emsg string
+		if err := r.ParseForm(); err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+		pagePath := r.FormValue("pagepath")
+		_, abspath, err := absPath(pagePath)
+		if err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+		file, err := os.Open(abspath)
+		if err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+		defer file.Close()
+
+		fileinfo, err := file.Stat()
+		if err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+
+		filesize := fileinfo.Size()
+		buffer := make([]byte, filesize)
+
+		if _, err := file.Read(buffer); err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+		rw.Write(buffer)
 	})
 }
