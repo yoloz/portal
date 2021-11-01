@@ -113,6 +113,62 @@ func handleRoute() {
 		router.PathPrefix(k).Handler(http.StripPrefix(k, http.FileServer(http.Dir(v))))
 	}
 
+	router.HandleFunc("/rename", func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Add("Content-Type", "text/plain; charset=utf-8")
+		var emsg string
+		if err := r.ParseForm(); err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+		oldpath := r.FormValue("oldpath")
+		newpath := r.FormValue("newpath")
+
+		oldir, oldabs, err := absPath(oldpath)
+		if err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+		newdir, newabs, err := absPath(newpath)
+		if err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+
+		if _, err := os.Stat(newdir); err != nil {
+			if os.IsNotExist(err) {
+				if err := os.MkdirAll(newdir, 0744); err != nil {
+					emsg = fmt.Sprintf("%v", err)
+					rw.Write([]byte(emsg))
+				}
+			} else {
+				emsg = fmt.Sprintf("%v", err)
+				rw.Write([]byte(emsg))
+			}
+			return
+		}
+		if err := os.Rename(oldabs, newabs); err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+		if strings.Compare(oldir, newdir) != 0 {
+			if err = post.GenerateDocsifyIndex(oldir); err != nil {
+				emsg = fmt.Sprintf("%v", err)
+				rw.Write([]byte(emsg))
+				return
+			}
+		}
+		if err = post.GenerateDocsifyIndex(newdir); err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+		rw.Write([]byte("ok"))
+	})
+
 	router.HandleFunc("/moveimage", func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Add("Content-Type", "text/plain; charset=utf-8")
 		var emsg string
@@ -163,6 +219,34 @@ func handleRoute() {
 		}
 
 		rw.Write([]byte(newrelativepath))
+	})
+
+	router.HandleFunc("/delete", func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Add("Content-Type", "text/plain; charset=utf-8")
+		var emsg string
+		if err := r.ParseForm(); err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+		pagePath := r.FormValue("pagepath")
+		dir, abspath, err := absPath(pagePath)
+		if err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+		if err := os.RemoveAll(abspath); err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+		if err = post.GenerateDocsifyIndex(dir); err != nil {
+			emsg = fmt.Sprintf("%v", err)
+			rw.Write([]byte(emsg))
+			return
+		}
+		rw.Write([]byte("ok"))
 	})
 
 	router.HandleFunc("/savepage", func(rw http.ResponseWriter, r *http.Request) {

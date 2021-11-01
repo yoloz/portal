@@ -43,14 +43,16 @@
         <input id="pagepath" class="inputtxt" placeholder="文章地址" name="pagepath"></input>
         <button id="editpage" class="button">加载编辑</button>
         <button id="savepage" class="button">保存</button>
+        <button id="delete" class="button">删除</button>
     </div>
     <div style="text-align: center;display: block;">
-        源地址：
+        源文件：
         <input id="oldpath" class="inputtxt" placeholder="/src/path" name="oldpath"></input>
         &nbsp;&nbsp;
-        目地址:
+        目标文件:
         <input id="newpath" class="inputtxt" placeholder="absolute or relative path" name="newpath"></input>
-        <button id="moveimage" class="button">上传图片移动</button>
+        <button id="moveimage" class="button">图片移动</button>
+        <button id="rename" class="button">重命名</button>
     </div>
     <div id="editor">
     </div>
@@ -69,7 +71,21 @@
                 path: "editormd/lib/"
             });
         });
-
+        $("#delete").bind('click', function () {
+            var pagepath = $("#pagepath").val();
+            if (pagepath == "") {
+                alert("path is empty");
+                return
+            }
+            $.ajax({
+                method: "POST",
+                url: "/delete",
+                data: { pagepath: pagepath },
+                success: function (data) {
+                    alert(data);
+                }
+            });
+        });
         $("#savepage").bind('click', function () {
             var pagepath = $("#pagepath").val();
             if (pagepath == "") {
@@ -120,6 +136,22 @@
                     var cursour = editor.getCursor();
                     editor.setSelection(cursour)
                     editor.insertValue(data);
+                }
+            });
+        });
+        $("#rename").bind('click', function () {
+            var oldpath = $("#oldpath").val();
+            var newpath = $("#newpath").val();
+            if (oldpath == "" || newpath == "") {
+                alert("path is empty!");
+                return
+            }
+            $.ajax({
+                method: "POST",
+                url: "/rename",
+                data: { oldpath: oldpath, newpath: newpath },
+                success: function (data) {
+                    alert(data);
                 }
             });
         });
