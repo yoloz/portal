@@ -25,8 +25,8 @@ var router = mux.NewRouter()
 func main() {
 
 	cfgs := os.Args
-	if len(cfgs) == 0 {
-		cfg_path = "../config"
+	if len(cfgs) == 1 {
+		cfg_path = "config"
 	} else {
 		cfg_path = cfgs[1]
 	}
@@ -102,8 +102,14 @@ func handleRoute() {
 	router.HandleFunc("/newPage", func(rw http.ResponseWriter, r *http.Request) {
 		http.ServeFile(rw, r, cfg_path+"../static/newPage.html")
 	})
+
+	//相关js，css文件下载出现超时，故添加到本地
+	router.PathPrefix("/_media").Handler(http.StripPrefix("/_media",
+		http.FileServer(http.Dir(cfg_path+"../static/_media"))))
+
 	router.PathPrefix("/editormd").Handler(http.StripPrefix("/editormd",
 		http.FileServer(http.Dir(cfg_path+"../static/editormd"))))
+
 	router.Handle("/upload", new(post.UploadImage))
 
 	for k, v := range cfg_map {
